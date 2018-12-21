@@ -34,8 +34,18 @@ inline void setAvail(int index, int number, int value){
     nodes[index].avail[number] = value;
     if(value == 0)  nodes[index].critical--;
 }
+
+/*
+Tree Node Structure
+                   left, right
+         *      -> 0   , 2      A node contain 3 leaves
+        / \                     Make single node appear at left leaf
+           *    -> 1   , 2      A node contain 2 leaves, which can be determined in one check
+           /\
+               
+*/
 void treeConstruct(int index, int left, int right){
-    if(right - left > 0){  // Node init
+    if(right - left >= 1){  // Node init
         nodes[index].leftIndex = left;
         nodes[index].rightIndex = right;
         nodes[index].visited = 0;
@@ -54,26 +64,43 @@ void treeConstruct(int index, int left, int right){
         ans[right] = 0;
     }
 }
-inline int isLeaf(int index){
-    if(nodes[index].rightIndex - nodes[index].leftIndex > 1) return 0;
-    if(nodes[index].rightIndex - nodes[index].leftIndex == 1) return 1;
-    if(nodes[index].rightIndex - nodes[index].leftIndex == 0) return 2;
-    return 3;
+void setVisitedRecursive(int index, int left, int right){
+    if(right - left >= 1){
+        nodes[index].visited = 1;
+        int middle = (right+left)/2;
+        setVisitedRecursive(getRightChildIndex(index), middle, right);
+        setVisitedRecursive(getLeftChildIndex(index), left, middle-1);
+    }
 }
+inline int distance(int index){
+    return nodes[index].rightIndex - nodes[index].leftIndex;
 /*  DFS walk tree  */
 void getDFSnext(){
-    int offset = isLeaf(getRightChildIndex(DFSwalkIndex));
-    if(offset >= 1){      // Right side not reach end
+    int offset = distance(getRightChildIndex(DFSwalkIndex));
+    if(offset > 1){      // Right side not reach end
         stack[top++] = getLeftChildIndex(DFSwalkIndex); // Push left into task
         DFSwalkIndex = getRightChildIndex(DFSwalkIndex);
-    }
-    else if(offset == 1){ // Leaf which only have one node, answer confirm
-        ans[nodes[DFSwalkIndex].rightIndex] = getRestAvailNum[]
-        getDFSnext();
     }
     else{
         DFSwalkIndex = stack[--top];
         if(top == 0)    printf("End of Search\n");
+    }
+}
+#pragma endregion
+#pragma region Manager
+inline void taskManager(){
+    // Maintain task counter
+    resolverCounter = assignerCounter;
+    assignerCounter++;
+    if(assignerCounter>=9){
+        resolverIndexChangeFlag = 1;
+        if(distance(assignerIndex) == 1)
+            specialWorker = 1;
+        assignerCounter = 0;
+        resolverIndex = assignerIndex;
+        assignerIndex = getDFSnext();
+        while(nodes[assignerIndex].visited)
+            assignerIndex = getDFSnext();
     }
 }
 #pragma endregion
@@ -83,16 +110,27 @@ inline void checkAnswerCanBeDetermine(int index){
         setArr(nodes[index].leftIndex, 
                 nodes[index].rightIndex,
                 answer);
+        setVisitedRecursive(index, nodes[index].leftIndex, 
+                nodes[index].rightIndex);
     }
 }
 void setArr(int left, int right, char value){
     for(int i = left; i<=right; i++)
         ans[i] = value;
 }
-inline void getRestAvailNum(int index){
-    int answer = -1;
-    while(nodes[resolverIndex].avail[++answer]==0) ;
+void setArr(int index, char value){
+    ans[index] = value;
+}
+inline void getRestAvailNum(int* start=0, int index){
+    int answer = *start;
+    while(nodes[resolverIndex].avail[answer]==0) answer++;
+    *start = answer;
     return answer;
+}
+inline void nodeLeafExchange(int index){
+    int tmp = ans[nodes[index].rightIndex];
+    ans[nodes[index].rightIndex] = ans[nodes[index].leftIndex];
+    ans[nodes[index].leftIndex] = tmp;
 }
 void init(){
     for(int i = 0; i<ANS_LEN; i++){
@@ -117,25 +155,13 @@ void clueDecoder(int *A, int *B, char* clue){
     }
     *B = sum;
 }
-#pragma region Manager
-inline void taskManager(){
-    // Maintain task counter
-    resolverCounter = assignerCounter;
-    assignerCounter++;
-    if(assignerCounter>=9){
-        assignerCounter = 0;
-        resolverIndex = assignerIndex;
-        assignerIndex = getDFSnext();
-        while(nodes[assignerIndex].visited)
-            assignerIndex = getDFSnext();
-    }
-}
-#pragma endregion
 
 /* Global Variables setup */ 
 int stage = 0;
 int dataNeedConfirm = 0;
 int lastLeafA = 0;
+int resolverIndexChangeFlag = 0;
+int specialWorker = 0;
 int assignerCounter = 0, resolverCounter;
 int assignerIndex = 0, resolverIndex = 0;
 int stat[TYPE_CHAR];
@@ -161,12 +187,13 @@ char *guess(char *clue){
         if(resolverIndex == 0) {    // Head node
             nodes[resolverIndex].avail[resolverCounter] = A;
         }
+        else if(specialWorker){
+            if(A < lastLeafA)
+                nodeLeafExchange(resolverIndex);
+            specialWorker = 0;
+        }
         else{
-            if(dataNeedComfirm){
-                
-            }
-            /* The end of a task */
-            if(resolverCounter == 9){
+            if(resolverIndexChangeFlag == 1){
                 /* Calculate Rr0 */
                 int sumA = 0;
                 for(int i=0;i<TYPE_CHAR;i++)
@@ -179,35 +206,36 @@ char *guess(char *clue){
                 
                 /* Calculate Right side avail */
                 for(int i=1; i<TYPE_CHAR; i++){
-                    if(nodes[resolverIndex].avail[i] != -1)
+                    if(nodes[resolverIndex].avail[i] != 0)
                         setAvail(resolverIndex, i, nodes[resolverIndex].avail[0] + clueA[i] - R0);
-                        //nodes[resolverIndex].avail[i] = nodes[resolverIndex].avail[0] + clueA[i] - R0;
                 }
-                int leftSilbingIndex = getLeftChildIndex(parentIndex);
-                /* Calculate Left side avail */
-                for(int i=0; i<TYPE_CHAR; i++){
-                    setAvail(leftSilbingIndex, 
-                    , nodes[parentIndex].avail[i] - nodes[resolverIndex].avail[i]);
-                    //nodes[getLeftChildIndex(parentIndex)].avail[i]
-                    // = nodes[parentIndex].avail[i] - nodes[resolverIndex].avail[i];
-                }
-                if(nodes[leftSilbingIndex].critical == 1){
-                    setArr()
-                }
-                /* Mark as visited to ignore it in future visiting by DFS */
                 nodes[resolverIndex].visited = 1;
-                nodes[leftSilbingIndex].visited = 1;
-                
-                /* Deal with known result */
-                /* Deal with critical condition which answer can be determined */
                 checkAnswerCanBeDetermine(resolverIndex);
-                checkAnswerCanBeDetermine(leftSilbingIndex);
 
-                /* Deal with the situation that only have two space */
-                if(isLeaf(resolverIndex)){
-                    dataNeedComfirm = 1;
-                    setArr()
+                /* Calculate Left side avail */
+                /* Leaf */
+                if(distance(resolverIndex) == 1){
+                    lastLeafA = A;
+                    int answer = 0;
+                    while(nodes[parentIndex].avail[answer] - nodes[resolverIndex].avail[answer] != 1) answer++;
+                    setArr(nodes[parentIndex].leftIndex, answer);
                 }
+                /* Segment */
+                else{
+                    int leftSilbingIndex = getLeftChildIndex(parentIndex);
+                    for(int i=0; i<TYPE_CHAR; i++){
+                        setAvail(leftSilbingIndex, 
+                        , nodes[parentIndex].avail[i] - nodes[resolverIndex].avail[i]);
+                    }
+                    /* Mark as visited to ignore it in future visiting by DFS */
+                    nodes[leftSilbingIndex].visited = 1;
+                    
+                    /* Deal with known result */
+                    /* Deal with critical condition which answer can be determined */
+                    checkAnswerCanBeDetermine(leftSilbingIndex);
+                }
+                /* Deal with the situation that only have two space */
+                resolverIndexChangeFlag = 0;
             }
             /* In regular, restore the clue */
             else clue[resolverCounter] = A;// Process clue from 0~9
@@ -217,17 +245,24 @@ char *guess(char *clue){
 
     #pragma region Task Assigner
     /* Task Assigner */
-    if(resolverCounter - assignerCounter > 0){  
-        // A new cycle, clear old changes
-        int leftSiblingIndex = getLeftChildIndex(getParentIndex(assignerIndex));
-        setArr(nodes[leftSiblingIndex].leftIndex, nodes[leftSiblingIndex].rightIndex, 0);
+    if(specialWorker){
+        int counter = 0;
+        ans[ nodes[assignerIndex].leftIndex ] = getRestAvailNum(&counter, assignerIndex);
+        ans[ nodes[assignerIndex].rightIndex ] = getRestAvailNum(&counter, assignerIndex);
     }
-    while(nodes[getParentIndex(assignerIndex)].avail[assignerCounter] == 0){
-        setAvail(assignerIndex, assignerCounter, 0);
-        //nodes[assignerIndex].avail[assignerCounter] = 0;
-        taskManager();
+    else{
+        if(resolverCounter - assignerCounter > 0){  
+            // A new cycle, clear old changes
+            int leftSiblingIndex = getLeftChildIndex(getParentIndex(assignerIndex));
+            setArr(nodes[leftSiblingIndex].leftIndex, nodes[leftSiblingIndex].rightIndex, 0);
+        }
+        while(nodes[getParentIndex(assignerIndex)].avail[assignerCounter] == 0){
+            setAvail(assignerIndex, assignerCounter, 0);
+            taskManager();
+        }
+        setArr(nodes[assignerIndex].leftIndex, nodes[assignerIndex].rightIndex, taskCounter);
     }
-    setArr(nodes[assignerIndex].leftIndex, nodes[assignerIndex].rightIndex, taskCounter);
+        
     // TODO: zero problem
     #pragma endregion Task Assigner
 
