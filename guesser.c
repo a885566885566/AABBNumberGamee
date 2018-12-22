@@ -22,6 +22,7 @@ int stage = 0;
 int dataNeedConfirm = 0;
 int lastLeafA = 0;
 int resolverIndexChangeFlag = 0;
+int newAssignerIndexFlag = 0;
 int specialWorker = 0;
 int assignerCounter = 0, resolverCounter;
 int assignerIndex = 0, resolverIndex = 0;
@@ -34,7 +35,7 @@ int stepCounter = 0;
 int clueA[TYPE_CHAR];
 // Number of nodes require to restore all ans, which means 
 // there is ANS_LEN leaves in tree
-
+void resetSilbing(int index);
 
 #pragma region TreeOperation
 static inline int getParentIndex(int index){
@@ -125,6 +126,8 @@ static inline void taskManager(){
         assignerIndex = getDFSnext();
         while(nodes[assignerIndex].visited)
             assignerIndex = getDFSnext();
+        //resetSilbing(assignerIndex);
+        newAssignerIndexFlag = 1;
     }
 }
 #pragma endregion
@@ -215,9 +218,24 @@ void clueDecoder(int *A, int *B, char* clue){
     }
     *B = sum;
 }
-
+void resetSilbing(int index){
+    if(!isLeftNode(index)){  // && newAssignerIndexFlag == 1
+        // New cycle begin at right node 
+        // A new cycle, clear old changes
+        newAssignerIndexFlag = 0;
+        printf("\nReset sibling, at %d(%d, %d)\n", index, nodes[index].leftIndex, nodes[index].rightIndex);
+        if(distance(getParentIndex(index)) == 1){ // Leaf
+            int leftAnsIndex = nodes[getParentIndex(index)].leftIndex;
+            setArrSingle(leftAnsIndex, 0);
+        }
+        else{
+            int leftSiblingIndex = getLeftSiblingIndex(index); 
+            setArr(nodes[leftSiblingIndex].leftIndex, nodes[leftSiblingIndex].rightIndex, 0);
+        }
+    }
+}
 char *guess(char *clue){
-    printf("Stage %d ", stage);
+    //printf("Stage %d ", stage);
     stepCounter++;
     /* In first call, the clue is useless, and need to initialize variables */
     if(stage == 0){ 
@@ -228,10 +246,10 @@ char *guess(char *clue){
     /* Except for first call, analyze the clue */
     else{
         clueDecoder(&A, &B, clue);
-        printf("step= %d, %d A %d B\n",stepCounter, A, B);
+        //printf("step= %d, %d A %d B\n",stepCounter, A, B);
         if(resolverIndex == 0) {    // Head node
             nodes[resolverIndex].avail[resolverCounter] = A;
-            printAvail(resolverIndex);
+            //printAvail(resolverIndex);
         }
         else if(specialWorker){
             if(A < lastLeafA)
@@ -264,7 +282,7 @@ char *guess(char *clue){
                         setAvail(resolverIndex, i, nodes[resolverIndex].avail[0] + clueA[i] - R0);
                     clueA[i] = 0;
                 }
-                printf("Preview\n");
+                printf("Right Side Avail\n");
                 printf("sumA= %d, R0= %d, N= %d\n", sumA, R0, N);
                 printAvail(resolverIndex);
                 nodes[resolverIndex].visited = 1;
@@ -277,6 +295,7 @@ char *guess(char *clue){
                     int answer = 0;
                     while(nodes[parentIndex].avail[answer] - nodes[resolverIndex].avail[answer] != 1) answer++;
                     setArrSingle(nodes[parentIndex].leftIndex, answer);
+                    printf("Set confirmed single data %d\n", answer);
                 }
                 /* Segment */
                 else{
@@ -287,6 +306,9 @@ char *guess(char *clue){
                     }
                     /* Mark as visited to ignore it in future visiting by DFS */
                     nodes[leftSilbingIndex].visited = 1;
+                    printf("Left Side Avail\n");
+                    printf("sumA= %d, R0= %d, N= %d\n", sumA, R0, N);
+                    printAvail(leftSilbingIndex);
                     
                     /* Deal with known result */
                     /* Deal with critical condition which answer can be determined */
@@ -306,24 +328,22 @@ char *guess(char *clue){
     resolverIndex = assignerIndex;
     #pragma region Task Assigner
     /* Task Assigner */
-    printf("Assigner(%d, %d): \n", assignerIndex, resolverIndex);
+    //printf("Assigner(%d, %d): \n", assignerIndex, resolverIndex);
     if(specialWorker){
         int counter = 0;
         ans[ nodes[assignerIndex].leftIndex ] = getRestAvailNum(&counter, assignerIndex);
         ans[ nodes[assignerIndex].rightIndex ] = getRestAvailNum(&counter, assignerIndex);
     }
     else{
-        if(resolverCounter - assignerCounter > 0){  
-            // A new cycle, clear old changes
-            printf("\nNew cycle begin, at %d\n", assignerIndex);
-            printAvail(assignerIndex);
-            int leftSiblingIndex = getLeftSiblingIndex(assignerIndex); 
-            setArr(nodes[leftSiblingIndex].leftIndex, nodes[leftSiblingIndex].rightIndex, 0);
-        }
+        //if(newAssignerIndexFlag)
+        //    resetSilbing(assignerIndex);
         while(assignerCounter!=0 && nodes[getParentIndex(assignerIndex)].avail[assignerCounter] == 0 ){
             printf("Fast forward: %d->%d\n",assignerIndex, assignerCounter);
             setAvail(assignerIndex, assignerCounter, 0);
             taskManager();
+            
+            if(newAssignerIndexFlag)
+                resetSilbing(assignerIndex);
         }
         setArr(nodes[assignerIndex].leftIndex, nodes[assignerIndex].rightIndex, assignerCounter);
     }
