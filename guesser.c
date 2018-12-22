@@ -115,7 +115,6 @@ static inline void taskManager(){
     // Maintain task counter
     resolverCounter = assignerCounter;
     assignerCounter++;
-    resolverIndex = assignerIndex;
     if(assignerCounter>9){
         if(assignerIndex != 0)
             resolverIndexChangeFlag = 1;
@@ -241,6 +240,7 @@ char *guess(char *clue){
         }
         else{
             if(resolverIndexChangeFlag == 1){
+                clueA[resolverCounter] = A;
                 printf("Resolver Report(%d, %d)\n", assignerIndex, resolverIndex);
                 /* Calculate Rr0 */
                 int sumA = 0;
@@ -248,21 +248,21 @@ char *guess(char *clue){
                 for(int i=0; i<TYPE_CHAR; i++)
                     printf("%d, ", clueA[i]);
                 printf("\n");
-                for(int i=0;i<TYPE_CHAR;i++){
+                for(int i=1;i<TYPE_CHAR;i++){
                     sumA += clueA[i];
-                    clueA[i] = 0;
                 }
                 int parentIndex = getParentIndex(resolverIndex);
                 int R0 = nodes[parentIndex].avail[0];
                 //int R0 = nodes[resolverIndex].avail[0];
                 int N = 1 + nodes[resolverIndex].rightIndex - nodes[resolverIndex].leftIndex;
                 //nodes[resolverIndex].avail[0] = 1 - (R0 - N + sumA)/9;
-                setAvail(resolverIndex, 0, 1 - (R0 - N + sumA)/9);
+                setAvail(resolverIndex, 0, (9*R0 + N - sumA)/10);
                 
                 /* Calculate Right side avail */
                 for(int i=1; i<TYPE_CHAR; i++){
-                    if(nodes[resolverIndex].avail[i] != 0)
+                    if(nodes[parentIndex].avail[i] != 0)
                         setAvail(resolverIndex, i, nodes[resolverIndex].avail[0] + clueA[i] - R0);
+                    clueA[i] = 0;
                 }
                 printf("Preview\n");
                 printf("sumA= %d, R0= %d, N= %d\n", sumA, R0, N);
@@ -299,10 +299,11 @@ char *guess(char *clue){
             }
             /* In regular, restore the clue */
             else clueA[resolverCounter] = A;// Process clue from 0~9
+        
         }
     }
     #pragma endregion Task Resolver
-
+    resolverIndex = assignerIndex;
     #pragma region Task Assigner
     /* Task Assigner */
     printf("Assigner(%d, %d): \n", assignerIndex, resolverIndex);
