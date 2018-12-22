@@ -6,12 +6,12 @@
 #include <time.h>
 
 #include "guesser.c"
-#define MAX_LENGTH 78763
+#define MAX_LENGTH 10
 clock_t start,finish;
 
 char *check(char data[MAX_LENGTH], char answer[MAX_LENGTH]) {
-    static char clue[12];
-    char temp_A[5],temp_B[5];
+    static char clue[13];
+    char temp_A[6],temp_B[6];
     int i;
     int A = 0;
     int ans_appear_times[10] = {0, 0, 0, 0, 0, 
@@ -60,11 +60,15 @@ int main(int argc, char *argv[]) {
     //time start
     gettimeofday(&tval_before, NULL);
     printf("Game Start\n");
-    guess(get_back);
-    getchar();
-    while(1){
+    printf("Puzzle = ");
+    for(int i = 0; i<ANS_LEN; i++)
+        printf("%c ", ans[i]);
+    printf("\n");
+    //guess(get_back);
+    //getchar();
+    while(1){	
         //get_back is mean that the result of your guess
-  	    strcpy(get_back,check(guess(get_back), ans));	
+  	    strcpy(get_back,check(guess(get_back), ans));
         // your guessed right!!! Congratulation !!!
         if(strcmp(get_back,"AC")==0)	break;
   	    gettimeofday(&tval_after, NULL);
