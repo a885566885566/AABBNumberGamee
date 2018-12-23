@@ -74,7 +74,7 @@ void treeConstruct(int index, int left, int right){
         nodes[index].visited = 0;
         nodes[index].critical = 9;
         for(int i=0;i<TYPE_CHAR;i++)
-            nodes[index].avail[i] = 0;
+            nodes[index].avail[i] = -1;
 
         int middle = (right+left+1)/2;
         treeConstruct(getRightChildIndex(index), middle, right);
@@ -251,6 +251,28 @@ void resetSilbing(int index){
         printf("\n");
     }
 }
+void guessRestNumber(int index){
+    if(nodes[index].critical == 0){
+        // Only one number
+        int answer = 0;
+        while(nodes[index].avail[answer] == 0) answer++;
+        setArrSingle(nodes[index].leftIndex, answer);
+        setArrSingle(nodes[index].rightIndex, answer);
+    }
+    else{
+        int answer = 0;
+        while(nodes[index].avail[answer] == 0) answer++;
+        setArrSingle(nodes[index].leftIndex, answer);
+        answer++;
+        while(nodes[index].avail[answer] == 0) answer++;
+        setArrSingle(nodes[index].rightIndex, answer);
+    }
+    #ifdef DEBUGGER
+    for(int i = 0; i<ANS_LEN; i++)
+        printf("%c ", ans[i]);
+    printf("\n");
+    #endif
+}
 char *guess(char *clue){
     //printf("Stage %d ", stage);
     stepCounter++;
@@ -270,7 +292,7 @@ char *guess(char *clue){
             //printAvail(resolverIndex);
         }
         else if(specialWorker){
-            if(A <= lastLeafA){
+            if(A <= lastLeafA+1){
                 nodeLeafExchange(resolverIndex);
                 printf("Wrong Guess\n");
             }
@@ -288,36 +310,44 @@ char *guess(char *clue){
             return ans;
         }
         else{
-            clueA[resolverCounter] = A;
+            //clueA[resolverCounter] = A;
+            nodes[resolverIndex].avail[resolverCounter] = A;
+            //if(resolverCounter>=0 && resolverCounter<TYPE_CHAR)
+            //    clueCounter++;
             if(resolverIndexChangeFlag == 1){
-                //clueA[resolverCounter] = A;
                 printf("Resolver Report(%d, %d)\n", assignerIndex, resolverIndex);
                 /* Calculate Rr0 */
+                int clueCounter = 0;
                 int sumA = 0;
                 printf("Item: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9\nClue: ");
                 for(int i=0; i<TYPE_CHAR; i++)
-                    printf("%d, ", clueA[i]);
+                    printf("%d, ", nodes[resolverIndex].avail[i]);
                 printf("\n");
-                for(int i=1;i<TYPE_CHAR;i++){
-                    sumA += clueA[i];
+                for(int i=0;i<TYPE_CHAR;i++){
+                    sumA += nodes[resolverIndex].avail[i];
                 }
+                for(int i=0;i<TYPE_CHAR;i++)
+                    if(nodes[resolverIndex].avail[i] <= 0)
+                        clueCounter++;
+                printf("clue= %d\n", clueCounter);
                 int parentIndex = getParentIndex(resolverIndex);
                 //int R0 = nodes[parentIndex].avail[0];
                 int R0 = nodes[0].avail[0];
                 //int R0 = nodes[resolverIndex].avail[0];
                 int N = 1 + nodes[resolverIndex].rightIndex - nodes[resolverIndex].leftIndex;
                 //nodes[resolverIndex].avail[0] = 1 - (R0 - N + sumA)/9;
-                setAvail(resolverIndex, 0, (9*R0 + N - sumA)/10);
-                
+                //setAvail(resolverIndex, 0, ((9-clueCounter)*R0+N-sumA)/(10-clueCounter));
+                setAvail(resolverIndex, 0, ((10-clueCounter)*R0+N-sumA)/(10-clueCounter));
                 /* Calculate Right side avail */
                 for(int i=1; i<TYPE_CHAR; i++){
                     if(nodes[parentIndex].avail[i] != 0)
-                        setAvail(resolverIndex, i, nodes[resolverIndex].avail[0] + clueA[i] - R0);
-                    clueA[i] = 0;
+                        setAvail(resolverIndex, i, nodes[resolverIndex].avail[0] + nodes[resolverIndex].avail[i] - R0);
+                    //clueA[i] = 0;
                 }
                 printf("Right:");
-                printf("sumA= %d, R0= %d, N= %d\n", sumA, R0, N);
+                printf("sumA= %d, R0= %d, N= %d, n=%d\n", sumA, R0, N, clueCounter);
                 printAvail(resolverIndex);
+                clueCounter = 0;
                 nodes[resolverIndex].visited = 1;
 
                 /* Calculate Left side avail */
@@ -352,19 +382,10 @@ char *guess(char *clue){
                 
                 if(distance(resolverIndex) == 1){
                     specialWorker = 1;
-                    printf("Critical %d\n", nodes[resolverIndex].critical);
                     lastLeafA = A;
-                    int answer = 0;
-                    while(nodes[resolverIndex].avail[answer] == 0) answer++;
-                    setArrSingle(nodes[resolverIndex].leftIndex, answer);
-                    answer++;
-                    while(nodes[resolverIndex].avail[answer] == 0) answer++;
-                    setArrSingle(nodes[resolverIndex].rightIndex, answer);
-                    
-                    printf("Guess1=  ", assignerIndex, assignerCounter);
-                    for(int i = 0; i<ANS_LEN; i++)
-                        printf("%c ", ans[i]);
-                    printf("\n");
+                    printf("Critical1= %d\n", nodes[resolverIndex].critical);
+                    printf("Guess1=  ");
+                    guessRestNumber(resolverIndex);
                     return ans;
                 }
                 else{
@@ -391,16 +412,9 @@ char *guess(char *clue){
     if(nodes[resolverIndex].visited == 1 && distance(assignerIndex)==1){
         superWorker = 1;
         int answer = 0;
-        while(nodes[resolverIndex].avail[answer] == 0) answer++;
-        setArrSingle(nodes[resolverIndex].leftIndex, answer);
-        answer++;
-        while(nodes[resolverIndex].avail[answer] == 0) answer++;
-        setArrSingle(nodes[resolverIndex].rightIndex, answer);
-        
-        printf("Guess2=  ", assignerIndex, assignerCounter);
-        for(int i = 0; i<ANS_LEN; i++)
-            printf("%c ", ans[i]);
-        printf("\n");
+        printf("Critical2= %d\n", nodes[resolverIndex].critical);
+        printf("Guess2=  ");
+        guessRestNumber(resolverIndex);
         return ans;
     }
     else{
