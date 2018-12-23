@@ -6,7 +6,7 @@
 #include <time.h>
 
 #include "guesser.c"
-#define MAX_LENGTH 10
+#define MAX_LENGTH 20
 clock_t start,finish;
 
 char *check(char data[MAX_LENGTH], char answer[MAX_LENGTH]) {
