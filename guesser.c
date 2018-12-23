@@ -224,14 +224,24 @@ void resetSilbing(int index){
         // A new cycle, clear old changes
         newAssignerIndexFlag = 0;
         printf("\nReset sibling, at %d(%d, %d)\n", index, nodes[index].leftIndex, nodes[index].rightIndex);
-        if(distance(getParentIndex(index)) == 1){ // Leaf
+        /*if(distance(getParentIndex(index)) == 1){ // Leaf
+            int leftAnsIndex = nodes[getParentIndex(index)].leftIndex;
+            setArrSingle(leftAnsIndex, 0);
+        }*/
+        if(distance(index) == 1){ // Leaf
+            printf("Single\n");
             int leftAnsIndex = nodes[getParentIndex(index)].leftIndex;
             setArrSingle(leftAnsIndex, 0);
         }
         else{
+            printf("Multi\n");
             int leftSiblingIndex = getLeftSiblingIndex(index); 
             setArr(nodes[leftSiblingIndex].leftIndex, nodes[leftSiblingIndex].rightIndex, 0);
         }
+        printf("New Sibling = ");
+        for(int i = 0; i<ANS_LEN; i++)
+            printf("%c ", ans[i]);
+        printf("\n");
     }
 }
 char *guess(char *clue){
@@ -286,7 +296,7 @@ char *guess(char *clue){
                 printf("sumA= %d, R0= %d, N= %d\n", sumA, R0, N);
                 printAvail(resolverIndex);
                 nodes[resolverIndex].visited = 1;
-                checkAnswerCanBeDetermine(resolverIndex);
+                //checkAnswerCanBeDetermine(resolverIndex);
 
                 /* Calculate Left side avail */
                 /* Leaf */
@@ -312,7 +322,7 @@ char *guess(char *clue){
                     
                     /* Deal with known result */
                     /* Deal with critical condition which answer can be determined */
-                    checkAnswerCanBeDetermine(leftSilbingIndex);
+                    //checkAnswerCanBeDetermine(leftSilbingIndex);
                 }
                 /* Deal with the situation that only have two space */
                 
@@ -326,6 +336,8 @@ char *guess(char *clue){
     }
     #pragma endregion Task Resolver
     resolverIndex = assignerIndex;
+    if(newAssignerIndexFlag)
+        resetSilbing(assignerIndex);
     #pragma region Task Assigner
     /* Task Assigner */
     //printf("Assigner(%d, %d): \n", assignerIndex, resolverIndex);
