@@ -24,6 +24,7 @@ int lastLeafA = 0;
 int resolverIndexChangeFlag = 0;
 int newAssignerIndexFlag = 0;
 int specialWorker = 0;
+int superWorker = 0;
 int assignerCounter = 0, resolverCounter;
 int assignerIndex = 0, resolverIndex = 0;
 int stat[TYPE_CHAR];
@@ -262,19 +263,34 @@ char *guess(char *clue){
     /* Except for first call, analyze the clue */
     else{
         clueDecoder(&A, &B, clue);
+        printf(": %d-> %d\n", resolverCounter, A);
         //printf("step= %d, %d A %d B\n",stepCounter, A, B);
         if(resolverIndex == 0) {    // Head node
             nodes[resolverIndex].avail[resolverCounter] = A;
             //printAvail(resolverIndex);
         }
         else if(specialWorker){
-            if(A <= lastLeafA)
+            if(A <= lastLeafA){
                 nodeLeafExchange(resolverIndex);
+                printf("Wrong Guess\n");
+            }
+            else
+                printf("Right Guess\n");
             specialWorker = 0;
         }
+        else if(superWorker){
+            superWorker = 0;
+            specialWorker = 1;
+            lastLeafA = A;
+            nodeLeafExchange(resolverIndex);
+            resolverIndex = assignerIndex;
+            assignerIndex = getDFSnext();
+            return ans;
+        }
         else{
+            clueA[resolverCounter] = A;
             if(resolverIndexChangeFlag == 1){
-                clueA[resolverCounter] = A;
+                //clueA[resolverCounter] = A;
                 printf("Resolver Report(%d, %d)\n", assignerIndex, resolverIndex);
                 /* Calculate Rr0 */
                 int sumA = 0;
@@ -287,8 +303,8 @@ char *guess(char *clue){
                 }
                 int parentIndex = getParentIndex(resolverIndex);
                 //int R0 = nodes[parentIndex].avail[0];
-                //int R0 = nodes[0].avail[0];
-                int R0 = nodes[resolverIndex].avail[0];
+                int R0 = nodes[0].avail[0];
+                //int R0 = nodes[resolverIndex].avail[0];
                 int N = 1 + nodes[resolverIndex].rightIndex - nodes[resolverIndex].leftIndex;
                 //nodes[resolverIndex].avail[0] = 1 - (R0 - N + sumA)/9;
                 setAvail(resolverIndex, 0, (9*R0 + N - sumA)/10);
@@ -300,7 +316,7 @@ char *guess(char *clue){
                     clueA[i] = 0;
                 }
                 printf("Right:");
-                //printf("sumA= %d, R0= %d, N= %d\n", sumA, R0, N);
+                printf("sumA= %d, R0= %d, N= %d\n", sumA, R0, N);
                 printAvail(resolverIndex);
                 nodes[resolverIndex].visited = 1;
 
@@ -321,7 +337,8 @@ char *guess(char *clue){
                         , nodes[parentIndex].avail[i] - nodes[resolverIndex].avail[i]);
                     }
                     /* Mark as visited to ignore it in future visiting by DFS */
-                    nodes[leftSilbingIndex].visited = 1;
+                    //if(distance(leftSilbingIndex)>1)
+                        nodes[leftSilbingIndex].visited = 1;
                     printf("Left :");
                     //printf("sumA= %d, R0= %d, N= %d\n", sumA, R0, N);
                     printAvail(leftSilbingIndex);
@@ -344,7 +361,7 @@ char *guess(char *clue){
                     while(nodes[resolverIndex].avail[answer] == 0) answer++;
                     setArrSingle(nodes[resolverIndex].rightIndex, answer);
                     
-                    printf("Guess =  ", assignerIndex, assignerCounter);
+                    printf("Guess1=  ", assignerIndex, assignerCounter);
                     for(int i = 0; i<ANS_LEN; i++)
                         printf("%c ", ans[i]);
                     printf("\n");
@@ -355,7 +372,7 @@ char *guess(char *clue){
                 }
             }
             /* In regular, restore the clue */
-            else clueA[resolverCounter] = A;// Process clue from 0~9
+            //else clueA[resolverCounter] = A;// Process clue from 0~9
         
         }
     }
@@ -371,7 +388,22 @@ char *guess(char *clue){
         ans[ nodes[assignerIndex].leftIndex ] = getRestAvailNum(&counter, assignerIndex);
         ans[ nodes[assignerIndex].rightIndex ] = getRestAvailNum(&counter, assignerIndex);
     }*/
-    {
+    if(nodes[resolverIndex].visited == 1 && distance(assignerIndex)==1){
+        superWorker = 1;
+        int answer = 0;
+        while(nodes[resolverIndex].avail[answer] == 0) answer++;
+        setArrSingle(nodes[resolverIndex].leftIndex, answer);
+        answer++;
+        while(nodes[resolverIndex].avail[answer] == 0) answer++;
+        setArrSingle(nodes[resolverIndex].rightIndex, answer);
+        
+        printf("Guess2=  ", assignerIndex, assignerCounter);
+        for(int i = 0; i<ANS_LEN; i++)
+            printf("%c ", ans[i]);
+        printf("\n");
+        return ans;
+    }
+    else{
         //if(newAssignerIndexFlag)
         //    resetSilbing(assignerIndex);
         while(assignerCounter!=0 && nodes[getParentIndex(assignerIndex)].avail[assignerCounter] == 0 ){
@@ -390,7 +422,7 @@ char *guess(char *clue){
     printf("(%d, %d) = ", assignerIndex, assignerCounter);
     for(int i = 0; i<ANS_LEN; i++)
         printf("%c ", ans[i]);
-    printf("\n");
+    //printf("\n");
     stage++;
     taskManager();
     return ans;
