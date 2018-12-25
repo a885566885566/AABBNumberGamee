@@ -259,6 +259,8 @@ void resetSilbing(int index){
     }
 }
 void guessRestNumber(int index){
+    printf("Guess Avail:\n");
+    printAvail(index);
     if(nodes[index].critical == 0){
         // Only one number
         int answer = 0;
@@ -303,6 +305,7 @@ char *guess(char *clue){
             //printAvail(resolverIndex);
         }
         else if(specialWorker){
+            printf("LeafA = %d\n", A);
             if(A <= lastLeafA+1){
                 nodeLeafExchange(resolverIndex);
                 printf("Wrong Guess\n");
@@ -333,7 +336,7 @@ char *guess(char *clue){
                 int Nr = 0;
                 int Ncorrect = 0;
                 printf("Item: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9\nClue: ");
-                for(int i=0; i<TYPE_CHAR; i++)
+                for(int i=0; i<ANS_LEN; i++)
                     printf("%d, ", nodes[resolverIndex].avail[i]);
                 printf("\n");
                 int numZeroLen = nodes[resolverIndex].rightIndex+1;
@@ -345,11 +348,14 @@ char *guess(char *clue){
                         printf("%d ", numOfZero[i]);
                     printf("\n");
                     printf("End = %d\n", numZeroLen);
+                    if(ans[ANS_LEN-1] == '0')
+                        numOfZero[ANS_LEN-1] = 1;
                     for(;numZeroLen>nodes[resolverIndex].rightIndex+1; numZeroLen--){
-                        if(ans[numZeroLen] == '0')
-                            numOfZero[numZeroLen-1] = numOfZero[numZeroLen] + 1;
-                        else
-                            numOfZero[numZeroLen-1] = numOfZero[numZeroLen];
+                        numOfZero[numZeroLen-1] = numOfZero[numZeroLen];
+                        if(ans[numZeroLen-1] == '0'){
+                            numOfZero[numZeroLen-1]++;
+                            printf("detect at %d\n", numZeroLen-1);
+                        }
                     }
                     printf("Num of zero=");
                     for(int i=0;i<ANS_LEN;i++)
@@ -420,6 +426,7 @@ char *guess(char *clue){
                 if(distance(resolverIndex) == 1){
                     specialWorker = 1;
                     lastLeafA = A;
+                    printf("LeafA = %d\n", lastLeafA);
                     printf("Critical1= %d\n", nodes[resolverIndex].critical);
                     printf("Guess1=  ");
                     guessRestNumber(resolverIndex);
@@ -449,6 +456,7 @@ char *guess(char *clue){
     if(nodes[resolverIndex].visited == 1 && distance(assignerIndex)==1){
         superWorker = 1;
         int answer = 0;
+        printf("LeafA = %d\n", lastLeafA);
         printf("Critical2= %d\n", nodes[resolverIndex].critical);
         printf("Guess2=  ");
         guessRestNumber(resolverIndex);

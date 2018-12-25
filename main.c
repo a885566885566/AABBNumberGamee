@@ -93,5 +93,9 @@ int main(int argc, char *argv[]) {
             printf("\n"); 
         }
     }
+    printf("Puzzle = ");
+    for(int i = 0; i<ANS_LEN; i++)
+        printf("%c ", ans[i]);
+    printf("\n");
     return 0;
 }
