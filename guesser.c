@@ -5,6 +5,8 @@
 #define DEBUGGER
 #define ANS_LEN 20
 #define TYPE_CHAR 10
+#define true 1
+#define false 0
 typedef struct _NODE{
     int visited;
     int critical;
@@ -98,6 +100,7 @@ void setVisitedRecursive(int index, int left, int right){
 static inline int distance(int index){
     return nodes[index].rightIndex - nodes[index].leftIndex;
 }
+int stopFlag = false;
 /*  DFS walk tree  */
 int getDFSnext(){
     int offset = distance(getRightChildIndex(DFSwalkIndex));
@@ -111,7 +114,7 @@ int getDFSnext(){
             resolverIndexChangeFlag = 1;
         }while(nodes[getParentIndex(DFSwalkIndex)].rightIndex - nodes[getParentIndex(DFSwalkIndex)].leftIndex == 2);
         printf("Pop %d\n", DFSwalkIndex);
-        if(top == 0)    printf("End of Search\n");
+        if(top < 0)    stopFlag = true;
         else {
             printf("DFS_NextNext\n");
             //getDFSnext();
@@ -277,14 +280,14 @@ void guessRestNumber(int index){
     printf("\n");
     #endif
 }
-int numOfZero[TYPE_CHAR];
+int numOfZero[ANS_LEN];
 char *guess(char *clue){
     //printf("Stage %d ", stage);
     stepCounter++;
     /* In first call, the clue is useless, and need to initialize variables */
     if(stage == 0){ 
         init();
-        for(int i = 0; i<TYPE_CHAR; i++)
+        for(int i = 0; i<ANS_LEN; i++)
             numOfZero[i] = -1;
         numOfZero[ANS_LEN-1] = 0;
     }
@@ -336,9 +339,14 @@ char *guess(char *clue){
                 int numZeroLen = nodes[resolverIndex].rightIndex+1;
                 if(numZeroLen<ANS_LEN-1){
                     for(;numZeroLen<ANS_LEN-1 && numOfZero[numZeroLen]==-1;numZeroLen++) ;
+                    
+                    printf("Num of zero=");
+                    for(int i=0;i<ANS_LEN;i++)
+                        printf("%d ", numOfZero[i]);
+                    printf("\n");
                     printf("End = %d\n", numZeroLen);
                     for(;numZeroLen>nodes[resolverIndex].rightIndex+1; numZeroLen--){
-                        if(ans[numZeroLen] == 0)
+                        if(ans[numZeroLen] == '0')
                             numOfZero[numZeroLen-1] = numOfZero[numZeroLen] + 1;
                         else
                             numOfZero[numZeroLen-1] = numOfZero[numZeroLen];
@@ -475,6 +483,7 @@ char *guess(char *clue){
         printf("%c ", ans[i]);
     //printf("\n");
     stage++;
+    if(stopFlag) getchar();
     taskManager();
     return ans;
 }
